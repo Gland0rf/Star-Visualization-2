@@ -1,60 +1,57 @@
 import pygame
 import math
 
-# Initialize pygame
 pygame.init()
 
-# Constants
+#Constants
 WIDTH, HEIGHT = 1600, 1200
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Planet Orbiting Star")
 
-# Colors
+#Colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
-# Gravitational constant (arbitrary units)
+#Gravitational constant (arbitrary units)
 G = 1
 
-# Star properties
+#Star properties
 star_mass = 1000
 star_pos = [WIDTH // 2, HEIGHT // 2]
 
-# Planet properties
+#Planet properties
 planet_mass = 1
 planet_pos = [WIDTH // 2 + 300, HEIGHT // 2]
-planet_vel = [0, -2]  # Initial velocity for a circular orbit
+planet_vel = [0, -2]
 
 def calculate_gravitational_force(star_pos, star_mass, planet_pos, planet_mass):
-    # Calculate the vector from the planet to the star
+    #Vector from the planet to the star
     distance_vector = [star_pos[0] - planet_pos[0], star_pos[1] - planet_pos[1]]
     distance = math.sqrt(distance_vector[0]**2 + distance_vector[1]**2)
     
-    # Avoid division by zero
     if distance == 0:
         return [0, 0]
     
-    # Calculate gravitational force magnitude
+    #Gravitational force magnitude
     force_magnitude = G * star_mass * planet_mass / distance**2
     
-    # Normalize the distance vector to get the direction
+    #Normalize the distance vector
     force_direction = [distance_vector[0] / distance, distance_vector[1] / distance]
     
-    # Calculate the force vector
+    #Calculate the force vector
     force_vector = [force_magnitude * force_direction[0], force_magnitude * force_direction[1]]
     
     return force_vector
 
 def update_planet_position(planet_pos, planet_vel, planet_mass, star_pos, star_mass):
-    # Calculate the gravitational force
     force = calculate_gravitational_force(star_pos, star_mass, planet_pos, planet_mass)
     
-    # Update velocity: F = ma -> a = F/m -> dv = a*dt (assuming dt = 1 for simplicity)
+    # Update velocity:
     acceleration = [force[0] / planet_mass, force[1] / planet_mass]
     planet_vel[0] += acceleration[0]
     planet_vel[1] += acceleration[1]
     
-    # Update position: dr = v*dt (assuming dt = 1 for simplicity)
+    # Update position:
     planet_pos[0] += planet_vel[0]
     planet_pos[1] += planet_vel[1]
     
@@ -69,13 +66,13 @@ def main():
         clock.tick(60)
         WIN.fill(BLACK)
         
-        # Draw star
+        #Star
         pygame.draw.circle(WIN, WHITE, (int(star_pos[0]), int(star_pos[1])), 10)
         
-        # Draw planet
+        #Planet
         pygame.draw.circle(WIN, WHITE, (int(planet_pos[0]), int(planet_pos[1])), 5)
         
-        # Update planet position
+        #Planet position
         planet_pos, planet_vel = update_planet_position(planet_pos, planet_vel, planet_mass, star_pos, star_mass)
         print(planet_pos, planet_vel)
         
