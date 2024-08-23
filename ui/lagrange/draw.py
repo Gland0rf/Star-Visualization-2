@@ -62,7 +62,7 @@ class Lagrange_Points():
         self.draw_dotted_line(surface, white, planet_loc, star_loc, width=5, segment_length=20, gap_length=10)
         
         orbit_calculation = Orbit_Calc(G)
-        orbit_path = orbit_calculation.simulate_orbit(planet_loc[:], planet.velocity[:], planet.mass, star_loc, star.mass, 8, tolerance=100)
+        orbit_path = orbit_calculation.simulate_orbit(planet_loc[:], planet.velocity[:], planet.mass, star_loc, star.mass, 8, tolerance=100, max_steps=1000)
         
         if len(orbit_path) > 1:
             pygame.draw.aalines(surface, red, True, orbit_path, blend=3)
