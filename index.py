@@ -1,6 +1,7 @@
 import pygame
 import pygame_gui
 import sys
+from stars.edit_menu import Edit_Menu
 
 from stars.pulsating_star import PulsatingStar
 from stars.orbiting_planet import OrbitingStar
@@ -37,13 +38,16 @@ gradient_factor = 0.93
 gradient_stretch = 0.5
 
 orbiting_planets = []
+stars = []
         
 def main():
-    global orbiting_planets
+    global orbiting_planets, stars
     
     CURRENT_STATE = 1
     ACTIVE_STATE = 1
     PAUSE_STATE = 2
+    
+    CURRENT_EDIT_MENU = None
     
     clock = pygame.time.Clock()
     running = True
@@ -80,109 +84,34 @@ def main():
         gradient_stretch=gradient_stretch
     )
     
+    orbiting_planet_2 = OrbitingStar(
+        location=[width // 2 - 300, height // 2 - 100],
+        velocity=[0, -2 / resolution_factor],
+        mass=1,
+        speed_factor=8.0,
+        resolution_factor=resolution_factor,
+        min_radius=min_radius,
+        max_radius = max_radius,
+        pulse_speed=pulse_speed,
+        color_inner=RED,
+        color_outer=YELLOW,
+        gradient_factor=gradient_factor,
+        gradient_stretch=gradient_stretch
+    )
+    
     orbiting_planets.append(orbiting_planet)
+    orbiting_planets.append(orbiting_planet_2)
     
-    #Sliders
-    mass_planet_slider = Slider(
-        other_instance=orbiting_planet,
-        update_value='mass',
-        index=None,
-        window_size=(width, height),
-        resolution_factor=resolution_factor,
-        line_width=4,
-        line_length=200,
-        x_margin=20,
-        y_margin=20,
-        dot_radius=10,
-        slider_color=(255, 255, 255),
-        dot_color=(255, 0, 0)
-    )
+    stars.append(pulsating_star)
     
-    mass_star_slider = Slider(
-        other_instance=pulsating_star,
-        update_value='mass',
-        index=None,
-        window_size=(width, height),
-        resolution_factor=resolution_factor,
-        line_width=4,
-        line_length=200,
-        x_margin=20,
-        y_margin=60,
-        dot_radius=10,
-        slider_color=(255, 255, 255),
-        dot_color=(255, 0, 0)
-    )
-    
-    speed_slider = Slider(
-        other_instance=orbiting_planet,
-        update_value='speed_factor',
-        index=None,
-        window_size=(width, height),
-        resolution_factor=resolution_factor,
-        line_width=4,
-        line_length=200,
-        x_margin=20,
-        y_margin=100,
-        dot_radius=10,
-        slider_color=(255, 255, 255),
-        dot_color=(255, 0, 0)
-    )
-    
-    gc_slider = Slider(
-        other_instance=orbit_calculation,
-        update_value='G',
-        index=None,
-        window_size=(width, height),
-        resolution_factor=resolution_factor,
-        line_width=4,
-        line_length=200,
-        x_margin=20,
-        y_margin=140,
-        dot_radius=10,
-        slider_color=(255, 255, 255),
-        dot_color=(255, 0, 0)
-    )
-    
-    planet_vx_slider = Slider(
-        other_instance=orbiting_planet,
-        update_value='velocity',
-        index=0,
-        window_size=(width, height),
-        resolution_factor=resolution_factor,
-        line_width=4,
-        line_length=200,
-        x_margin=20,
-        y_margin=180,
-        dot_radius=10,
-        slider_color=(255, 255, 255),
-        dot_color=(255, 0, 0)
-    )
-    
-    planet_vy_slider = Slider(
-        other_instance=orbiting_planet,
-        update_value='velocity',
-        index=1,
-        window_size=(width, height),
-        resolution_factor=resolution_factor,
-        line_width=4,
-        line_length=200,
-        x_margin=20,
-        y_margin=220,
-        dot_radius=10,
-        slider_color=(255, 255, 255),
-        dot_color=(255, 0, 0)
-    )
-    
-    mass_planet_slider.create_slider("Mass of Planet 1: SLIDER_VALUE", pygame.font.SysFont(None, 36), 1, 100000, 1)
-    mass_star_slider.create_slider("Mass of Star: SLIDER_VALUE", pygame.font.SysFont(None, 36), 1, 10000, 1000)
-    speed_slider.create_slider("Speed of Planet 1: SLIDER_VALUE", pygame.font.SysFont(None, 36), 1, 80, 8)
-    gc_slider.create_slider("Gravitational Constant: SLIDER_VALUE", pygame.font.SysFont(None, 36), 1, 5, 1)
-    
-    planet_vx_slider.create_slider("Planet 1 velocity x: SLIDER_VALUE", pygame.font.SysFont(None, 36), -4, 4, 0)
-    planet_vy_slider.create_slider("Planet 1 velocity y: SLIDER_VALUE", pygame.font.SysFont(None, 36), -4, 4, -2)
+    edit_menu = Edit_Menu(surface=high_res_surface)
     
     while running:
+        high_res_surface.fill(BLACK)
+        
         for event in pygame.event.get():
+            edit_menu.check_events(event)
+            
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
@@ -191,22 +120,42 @@ def main():
                         CURRENT_STATE = PAUSE_STATE
                     else:
                         CURRENT_STATE = ACTIVE_STATE
-                
-            mass_planet_slider.slider_events(event)
-            mass_star_slider.slider_events(event)
-            speed_slider.slider_events(event)
-            gc_slider.slider_events(event)
+                        CURRENT_EDIT_MENU = None
+                        
+            result_planet = edit_menu.check_for_click(event, orbiting_planets, resolution_factor)
+            result_star = edit_menu.check_for_click(event, stars, resolution_factor)
             
-            planet_vx_slider.slider_events(event)
-            planet_vy_slider.slider_events(event)
+            if result_planet == "MISSED" and result_star == "MISSED":
+                mouse_pos = pygame.mouse.get_pos()
+                if(hasattr(edit_menu, 'planet_gc_slider')):
+                    if(mouse_pos[0] * resolution_factor < edit_menu.planet_gc_slider.line_start[0] - 50):
+                        CURRENT_EDIT_MENU = None
+                elif(hasattr(edit_menu, 'mass_star_slider')):
+                    if(mouse_pos[0] * resolution_factor < edit_menu.mass_star_slider.line_start[0] - 50):
+                        CURRENT_EDIT_MENU = None
+                        
+            elif result_planet is not None and result_planet != "MISSED":
+                CURRENT_EDIT_MENU = result_planet
+                edit_menu.create_sliders_planet(result_planet, (width, height), resolution_factor)
+            elif result_star is not None and result_star != "MISSED":
+                CURRENT_EDIT_MENU = result_star
+                edit_menu.create_sliders_star(result_star, (width, height), resolution_factor)
+            
+        if(CURRENT_EDIT_MENU in orbiting_planets):
+            edit_menu.open_planet_menu()
+        elif(CURRENT_EDIT_MENU in stars):
+            edit_menu.open_star_menu()
         
         #Twinkling
-        high_res_surface.fill(BLACK)
-        
         if(CURRENT_STATE == ACTIVE_STATE):
             orbiting_planet.location, orbiting_planet.velocity = orbit_calculation.update_planet_position(
                 orbiting_planet.location, orbiting_planet.velocity, orbiting_planet.mass,pulsating_star.location,
                 pulsating_star.mass, orbiting_planet.speed_factor
+            )
+            
+            orbiting_planet_2.location, orbiting_planet_2.velocity = orbit_calculation.update_planet_position(
+                orbiting_planet_2.location, orbiting_planet_2.velocity, orbiting_planet_2.mass,pulsating_star.location,
+                pulsating_star.mass, orbiting_planet_2.speed_factor
             )
         
         pulsating_star.update()
@@ -215,13 +164,11 @@ def main():
         orbiting_planet.update()
         orbiting_planet.draw(surface=high_res_surface, resolution_factor=resolution_factor)
         
+        orbiting_planet_2.update()
+        orbiting_planet_2.draw(surface=high_res_surface, resolution_factor=resolution_factor)
+        
         #Sliders
-        mass_planet_slider.draw(high_res_surface)
-        mass_star_slider.draw(high_res_surface)
-        speed_slider.draw(high_res_surface)
-        gc_slider.draw(high_res_surface)
-        planet_vx_slider.draw(high_res_surface)
-        planet_vy_slider.draw(high_res_surface)
+        #mass_star_slider.draw(high_res_surface)
         
         scaled_surface = pygame.transform.smoothscale(high_res_surface, (width, height))
         screen.blit(scaled_surface, (0, 0))
