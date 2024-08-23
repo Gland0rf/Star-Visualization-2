@@ -39,12 +39,13 @@ class Orbit_Calc:
         
         return planet_pos, planet_vel
     
-    def simulate_orbit(self, planet_pos, planet_vel, planet_mass, star_pos, star_mass, speed_factor, tolerance=5):
+    def simulate_orbit(self, planet_pos, planet_vel, planet_mass, star_pos, star_mass, speed_factor, tolerance=5, max_steps=1000):
         orbit_path = []
         initial_pos = planet_pos.copy()
         close_to_start = False
 
-        while not close_to_start:
+        steps = 0
+        while not close_to_start and steps < max_steps:
             # Update planet position and velocity
             planet_pos, planet_vel = self.update_planet_position(planet_pos, planet_vel, planet_mass, star_pos, star_mass, speed_factor)
             orbit_path.append((int(planet_pos[0]), int(planet_pos[1])))
@@ -53,5 +54,7 @@ class Orbit_Calc:
             distance_to_start = math.sqrt((planet_pos[0] - initial_pos[0])**2 + (planet_pos[1] - initial_pos[1])**2)
             if distance_to_start < tolerance and len(orbit_path) > 100:
                 close_to_start = True
+                
+            steps += 1
 
         return orbit_path
