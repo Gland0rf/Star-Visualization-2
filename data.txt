@@ -1,0 +1,8 @@
+The escpae velocity from a star's gravitational field depends ONLY on the mass of the star and the distance from the star, not
+on the mass of the planet. This is why, when you increase the star's mass, the planet's escape velocity increases, and if the
+planet's velocity isn't adjusted accordingly, it might no longer be sufficient to stay in orbit.
+Escape velocity is determined by: sqrt(2GM / r), where G is the gravitational constant, M the the mass of the star, and r
+the distance between planet and star.
+
+Formula for orbital velocity: sqrt(GM / r)
+For elliptical orbits, you would adjust the initial velocity to be less than the circular orbit velocity at that distance.
