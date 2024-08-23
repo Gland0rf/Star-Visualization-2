@@ -57,14 +57,26 @@ def update_planet_position(planet_pos, planet_vel, planet_mass, star_pos, star_m
     
     return planet_pos, planet_vel
 
+def simulate_orbit(planet_pos, planet_vel, planet_mass, star_pos, star_mass, steps):
+    orbit_path = []
+    for _ in range(steps):
+        orbit_path.append((int(planet_pos[0]), int(planet_pos[1])))
+        planet_pos, planet_vel = update_planet_position(planet_pos, planet_vel, planet_mass, star_pos, star_mass)
+    return orbit_path
+
 def main():
     global planet_pos, planet_vel
     clock = pygame.time.Clock()
     run = True
     
+    orbit_path = simulate_orbit(planet_pos[:], planet_vel[:], planet_mass, star_pos, star_mass, steps=5000)
+    
     while run:
         clock.tick(60)
         WIN.fill(BLACK)
+        
+        if len(orbit_path) > 1:
+            pygame.draw.lines(WIN, WHITE, False, orbit_path, 1)
         
         #Star
         pygame.draw.circle(WIN, WHITE, (int(star_pos[0]), int(star_pos[1])), 10)
@@ -74,7 +86,6 @@ def main():
         
         #Planet position
         planet_pos, planet_vel = update_planet_position(planet_pos, planet_vel, planet_mass, star_pos, star_mass)
-        print(planet_pos, planet_vel)
         
         pygame.display.update()
         

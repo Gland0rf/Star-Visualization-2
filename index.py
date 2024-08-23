@@ -7,7 +7,7 @@ from stars.pulsating_star import PulsatingStar
 from stars.orbiting_planet import OrbitingStar
 from stars.orbit_calculation import Orbit_Calc
 
-from ui.sliders.slider import Slider
+from ui.lagrange.draw import Lagrange_Points
 
 pygame.init()
 info = pygame.display.Info()
@@ -39,6 +39,8 @@ gradient_stretch = 0.5
 
 orbiting_planets = []
 stars = []
+
+GRAVITATIONAL_CONSTANT = 1
         
 def main():
     global orbiting_planets, stars
@@ -54,7 +56,7 @@ def main():
     
     high_res_surface = pygame.Surface((width * resolution_factor, height * resolution_factor))
     
-    orbit_calculation = Orbit_Calc(G=1)
+    orbit_calculation = Orbit_Calc(G=GRAVITATIONAL_CONSTANT)
     
     pulsating_star = PulsatingStar(
         location=center_pos,
@@ -120,7 +122,6 @@ def main():
                         CURRENT_STATE = PAUSE_STATE
                     else:
                         CURRENT_STATE = ACTIVE_STATE
-                        CURRENT_EDIT_MENU = None
                         
             result_planet = edit_menu.check_for_click(event, orbiting_planets, resolution_factor)
             result_star = edit_menu.check_for_click(event, stars, resolution_factor)
@@ -143,6 +144,8 @@ def main():
             
         if(CURRENT_EDIT_MENU in orbiting_planets):
             edit_menu.open_planet_menu()
+            lagrange = Lagrange_Points(CURRENT_EDIT_MENU, pulsating_star, resolution_factor)
+            lagrange.draw_lagrange_points(high_res_surface, GRAVITATIONAL_CONSTANT)
         elif(CURRENT_EDIT_MENU in stars):
             edit_menu.open_star_menu()
         
