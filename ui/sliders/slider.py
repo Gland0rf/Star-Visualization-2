@@ -1,7 +1,7 @@
 import pygame
 
 class Slider:
-    def __init__(self, manager, window_size, other_instance, update_value, resolution_factor, line_width, line_length, x_margin, y_margin, dot_radius, slider_color, dot_color):
+    def __init__(self, window_size, other_instance, update_value, index, resolution_factor, line_width, line_length, x_margin, y_margin, dot_radius, slider_color, dot_color):
         line_length *= resolution_factor
         line_width *= resolution_factor
         dot_radius *= resolution_factor
@@ -11,8 +11,8 @@ class Slider:
         
         self.other_instance = other_instance
         self.update_value = update_value
+        self.index = index
         self.resolution_factor = resolution_factor
-        self.manager = manager
         self.line_start = (window_size[0] - line_length - x_margin, window_size[1] - y_margin - dot_radius)
         self.line_end = (window_size[0] - x_margin, window_size[1] - y_margin - dot_radius)
         self.line_width = line_width
@@ -32,7 +32,10 @@ class Slider:
         self.min_val = min_val
         self.max_val = max_val
         
-        self.dot_position = ((self.line_end[0] - self.line_start[0]) * ((self.slider_value + min_val) / max_val) + self.line_start[0], self.line_start[1])
+        self.dot_position = (
+            self.line_start[0] + (slider_value - min_val) / (max_val - min_val) * (self.line_end[0] - self.line_start[0]),
+            self.line_start[1]
+        )
         
     def draw(self, surface):
         pygame.draw.line(surface, self.slider_color, self.line_start, self.line_end, self.line_width)
@@ -62,7 +65,23 @@ class Slider:
             self.dot_position = (mouse_x, self.line_start[1])
             self.slider_value = int((mouse_x - self.line_start[0]) / (self.line_end[0] - self.line_start[0]) * (self.max_val - self.min_val) + self.min_val)
             
-            if hasattr(self.other_instance, self.update_value):
-                setattr(self.other_instance, self.update_value, self.slider_value)
+            self.change_value()
+            
+    def change_value(self):
+        if hasattr(self.other_instance, self.update_value):
+            attribute = getattr(self.other_instance, self.update_value)
+            if isinstance(attribute, list):
+                if self.index is not None:
+                    # If index is provided, change the specific element in the list
+                    try:
+                        attribute[self.index] = self.slider_value
+                    except IndexError:
+                        raise IndexError(f"Index {self.index} is out of range for the list '{self.update_value}'")
+                else:
+                    # If no index is provided, change the entire list
+                    setattr(self.other_instance, self.update_value, self.slider_value)
             else:
-                raise AttributeError(f"'{self.other_instance.__class__.__name__}' object has no attribute '{self.update_value}'")
+                # If the attribute is not a list, change the entire attribute value
+                setattr(self.other_instance, self.update_value, self.slider_value)
+        else:
+            raise AttributeError(f"'{self.other_instance.__class__.__name__}' object has no attribute '{self.update_value}'")
