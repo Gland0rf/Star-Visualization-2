@@ -6,3 +6,14 @@ the distance between planet and star.
 
 Formula for orbital velocity: sqrt(GM / r)
 For elliptical orbits, you would adjust the initial velocity to be less than the circular orbit velocity at that distance.
+
+Lagrange points:
+There are 5 Lagrange points.
+
+L1 is located located between the two large bodies. The distance dL1 from the smaller body (mass m2) can be approximated
+for systems like the Earth-Sun or Earth-Moon by: dL1 = R * sqrt3((m2 / 3 * m1)), where R is the distance between the two
+large bodies, m1 is the mass of the larger body, and m2 is the mass of the smaller body
+
+L2 has the same calculation like L1, just in the reverse vector.
+
+L3, L4, and L5 do not have to be calculated, as they are points on the orbit of the smaller body.

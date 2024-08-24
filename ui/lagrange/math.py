@@ -41,3 +41,17 @@ def rotate_vector(dx, dy, angle_degrees):
     new_dy = dx * math.sin(angle_radians) + dy * math.cos(angle_radians)
     
     return new_dx, new_dy
+
+def find_point_on_line(point1, point2, distance):
+    x1, y1 = point1
+    x2, y2 = point2
+    
+    d_AB = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    
+    unit_vector_x = (x2 - x1) / d_AB
+    unit_vector_y = (y2 - y1) / d_AB
+    
+    x = x1 + distance * unit_vector_x
+    y = y1 + distance * unit_vector_y
+    
+    return (x, y)
