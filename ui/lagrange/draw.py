@@ -50,27 +50,46 @@ class Lagrange_Points():
             drawing = not drawing
         
     def draw_lagrange_points(self, surface, G):
-        #L1 and L2
-        planet = self.planet
-        star = self.star
-        
         white = (255, 255, 255)
         red = (255, 0, 0)
-        
+        planet = self.planet
+        star = self.star
         planet_loc = planet.location
         star_loc = star.location
-        self.draw_dotted_line(surface, white, planet_loc, star_loc, width=5, segment_length=20, gap_length=10)
         
+        #Draw orbit
         orbit_calculation = Orbit_Calc(G)
-        orbit_path = orbit_calculation.simulate_orbit(planet_loc[:], planet.velocity[:], planet.mass, star_loc, star.mass, 8, tolerance=100, max_steps=1000)
+        orbit_path = orbit_calculation.simulate_orbit(planet_loc[:], planet.velocity[:], planet.mass, star_loc, star.mass, 8, tolerance=100, max_steps=10000)
         
         if len(orbit_path) > 1:
             pygame.draw.aalines(surface, red, True, orbit_path, blend=3)
+        
+        #L1 and L2 line
+        self.draw_dotted_line(surface, white, planet_loc, star_loc, width=5, segment_length=20, gap_length=10)
+        
+        #L1
+        dL1 = int(math.dist(planet_loc, star_loc) * math.pow(planet.mass / (3 * star.mass), 1/3) * self.resolution_factor)
+        line_point = l_math.find_point_on_line((planet_loc), (star_loc), dL1)
+        pygame.draw.circle(surface, white, line_point, 10)
+        text_surface = pygame.font.SysFont(None, 36).render('L1', False, white)
+        surface.blit(text_surface, (line_point[0] + 20, line_point[1]))
+        
+        #L2
+        dx = star_loc[0] - planet_loc[0]
+        dy = star_loc[1] - planet_loc[1]
+        
+        hidden_loc = (planet_loc[0] + dx, planet_loc[1] + dy)
+        
+        line_point = l_math.find_point_on_line((planet_loc), (hidden_loc), -dL1)
+        pygame.draw.circle(surface, white, line_point, 10)
+        text_surface = pygame.font.SysFont(None, 36).render('L2', False, white)
+        surface.blit(text_surface, (line_point[0] + 20, line_point[1]))
             
         #L3
         dx = planet_loc[0] - star_loc[0]
         dy = planet_loc[1] - star_loc[1]
         length = math.sqrt(dx**2 + dy**2)
+        
         
         if length != 0:
             dx /= length
@@ -87,6 +106,10 @@ class Lagrange_Points():
             intersection_point = opposite_point
         
         self.draw_dotted_line(surface, white, star_loc, intersection_point, width=5, segment_length=20, gap_length=10)
+        pygame.draw.circle(surface, white, intersection_point, 10)
+        
+        text_surface = pygame.font.SysFont(None, 36).render('L3', False, white)
+        surface.blit(text_surface, (intersection_point[0] + 20, intersection_point[1]))
         
         #L4
         rotated_x, rotated_y = l_math.rotate_vector(dx, dy, 120) #L4 is 60 degrees off
@@ -101,7 +124,11 @@ class Lagrange_Points():
         if intersection_point is None:
             intersection_point = max_point
             
-        self.draw_dotted_line(surface, white, star_loc, intersection_point, width=5, segment_length=20, gap_length=10)
+        self.draw_dotted_line(surface, white, planet_loc, intersection_point, width=5, segment_length=20, gap_length=10)
+        pygame.draw.circle(surface, white, intersection_point, 10)
+        
+        text_surface = pygame.font.SysFont(None, 36).render('L4', False, white)
+        surface.blit(text_surface, (intersection_point[0] + 20, intersection_point[1]))
         
         #L5
         rotated_x, rotated_y = l_math.rotate_vector(dx, dy, -120) #L5 is 60 degrees off into the other direction
@@ -116,4 +143,8 @@ class Lagrange_Points():
         if intersection_point is None:
             intersection_point = max_point
             
-        self.draw_dotted_line(surface, white, star_loc, intersection_point, width=5, segment_length=20, gap_length=10)
+        self.draw_dotted_line(surface, white, planet_loc, intersection_point, width=5, segment_length=20, gap_length=10)
+        pygame.draw.circle(surface, white, intersection_point, 10)
+        
+        text_surface = pygame.font.SysFont(None, 36).render('L5', False, white)
+        surface.blit(text_surface, (intersection_point[0] + 20, intersection_point[1]))
