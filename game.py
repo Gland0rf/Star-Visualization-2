@@ -155,13 +155,13 @@ class Game:
                         if self.current_guide_active == 1:
                             if self.guide_iteration == kepler_sun_focus_guide.get_iteration_count() - 1:
                                 self.current_state = self.ACTIVE_STATE
-                                self.guide_iteration = 0
+                                self.guide_iteration = -1
                             kepler_sun_focus_guide.clear_text()
                             self.guide_iteration += 1
                         elif self.current_guide_active == 2:
                             if self.guide_iteration == kepler_equal_guide.get_iteration_count() - 1:
                                 self.current_state = self.ACTIVE_STATE
-                                self.guide_iteration = 0
+                                self.guide_iteration = -1
                                 kepler_equal_guide.reset_values()
                             kepler_equal_guide.clear_text()
                             self.guide_iteration += 1
