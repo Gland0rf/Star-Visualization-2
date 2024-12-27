@@ -1,0 +1,155 @@
+import pygame
+import math
+import numpy as np
+from stars.orbit_calculation import Orbit_Calc
+from ui.text.TextRenderer import TextRenderer
+
+class Kepler_Guide_Sun_Focus():
+    def __init__(self, screen, planet, star, base_font_size, color, position, G, resolution_factor=1.0, font_name=None):
+        self.screen = screen
+        self.resolution_factor = resolution_factor
+        self.G = G
+        self.planet = planet
+        self.star = star
+        
+        self.iterationQueue = [
+            "Keplers first law states that the orbit of every planet is an ellipse, with the sun at one of the two foci.",
+            "This right here is the orbit path of our planet. DRAW_ELLIPSE",
+            "Foci one is the red dot here. DRAW_RED_DOT",
+            "Calculated foci two is on the exact spot where the star is. DRAW_BLUE_DOT",
+            "This means, that the sun is always at one of the two foci of the ellipse. DRAW_ALL"
+        ]
+        
+        self.text_renderer = TextRenderer(font_name, base_font_size * resolution_factor, resolution_factor, color, position, char_delay=0.001)
+    
+    def call_state(self, state):
+        #Display text
+        self.add_text(self.iterationQueue[state])
+        
+    def clear_text(self):
+        self.text_renderer.clear_text()
+    
+    def add_text(self, text):
+        if "DRAW_ELLIPSE" in text:
+            text = text.replace(" DRAW_ELLIPSE", "")
+            self.draw_data(True, False, False)
+        elif "DRAW_RED_DOT" in text:
+            text = text.replace(" DRAW_RED_DOT", "")
+            self.draw_data(True, True, False)
+        elif "DRAW_BLUE_DOT" in text or "DRAW_ALL" in text:
+            text = text.replace(" DRAW_BLUE_DOT", "")
+            text = text.replace(" DRAW_ALL", "")
+            self.draw_data(True, True, True)
+            
+        self.text_renderer.add_text(text)
+        self.text_renderer.render(self.screen)
+        
+    def draw_data(self, draw_ellipse, draw_foci, draw_foci_two):
+        orbit_calc = Orbit_Calc(self.G)
+        
+        orbit_path = orbit_calc.simulate_orbit(self.planet.location[:], self.planet.velocity[:],
+                                               self.planet.mass, self.star.location, self.star.mass,
+                                               8, tolerance=100, max_steps=10000)
+        
+        orbit_path = self.subdivide_points(orbit_path, points_between=10)  
+        
+        closest_point = self.find_closest_point(orbit_path, self.star.location)
+        farthest_point = self.find_farthest_point(orbit_path, self.star.location)
+        
+        closestDifX = closest_point[0] - self.star.location[0]
+        closestDifY = closest_point[1] - self.star.location[1]
+        
+        focalPointX = farthest_point[0] + closestDifX
+        focalPointY = farthest_point[1] + closestDifY
+        
+        if draw_foci:
+            pygame.draw.circle(self.screen, (255, 0, 0), (focalPointX, focalPointY), 30)
+        
+        if draw_foci_two:
+            pygame.draw.circle(self.screen, (0, 0, 255), (self.star.location[0], self.star.location[1]), 30)
+                
+        if len(orbit_path) > 1:
+            if draw_ellipse:
+                pygame.draw.aalines(self.screen, (255, 0, 0), True, orbit_path, blend=3)
+            
+    def subdivide_points(self, points, points_between=4):
+        new_points = []
+        
+        for i in range(len(points) - 1):
+            p1 = np.array(points[i])
+            p2 = np.array(points[i + 1])
+            
+            new_points.append(p1)
+            
+            for j in range(1, points_between + 1):
+                t = j / (points_between + 1)
+                interpolated_point = (1 - t) * p1 + t * p2
+                new_points.append(interpolated_point)
+                
+        new_points.append(points[-1])
+        
+        return np.array(new_points)
+            
+    def find_closest_point(self, points, other_point):
+        closest_distance = -1
+        closest_point = -1
+        for point in points:
+            distance = math.sqrt((other_point[0] - point[0]) ** 2 + (other_point[1] - point[1]) ** 2)
+            if distance < closest_distance or closest_distance == -1:
+                closest_distance = distance
+                closest_point = point
+                
+        return closest_point
+    
+    def find_farthest_point(self, points, other_point):
+        closest_distance = -1
+        closest_point = -1
+        for point in points:
+            distance = math.sqrt((other_point[0] - point[0]) ** 2 + (other_point[1] - point[1]) ** 2)
+            if distance > closest_distance or closest_distance == -1:
+                closest_distance = distance
+                closest_point = point
+                
+        return closest_point
+    
+    def draw_dotted_line(self, surface, color, start_pos, end_pos, width=1, segment_length=10, gap_length=5):
+        #Total length of line
+        total_length = math.dist(start_pos, end_pos)
+        
+        #Direction vector
+        direction_vector = (
+            (end_pos[0] - start_pos[0]) / total_length,
+            (end_pos[1] - start_pos[1]) / total_length,
+        )
+        
+        #Variables
+        current_pos = start_pos
+        drawing = True
+        
+        while total_length > 0:
+            if drawing:
+                #Calculate segment pos
+                segment_end_pos = (
+                    current_pos[0] + direction_vector[0] * min(segment_length, total_length),
+                    current_pos[1] + direction_vector[1] * min(segment_length, total_length),
+                )
+                
+                #Draw segment
+                pygame.draw.line(surface, color, current_pos, segment_end_pos, width)
+                
+                #Update pos
+                current_pos = segment_end_pos
+                total_length -= segment_length
+            else:
+                #Move current pos by gap
+                current_pos = (
+                    current_pos[0] + direction_vector[0] * min(gap_length, total_length),
+                    current_pos[1] + direction_vector[1] * min(gap_length, total_length),
+                )
+                total_length -= gap_length
+            
+            #Toggle    
+            drawing = not drawing
+            
+    def get_iteration_count(self):
+        return len(self.iterationQueue)

@@ -96,7 +96,7 @@ class Edit_Menu:
         )
         
         self.planet_gc_slider.create_slider("Mass of Planet: SLIDER_VALUE", pygame.font.SysFont(None, 36), 1, 100000, 1)
-        self.planet_speed_slider.create_slider("Speed of Planet: SLIDER_VALUE", pygame.font.SysFont(None, 36), 1, 80, 8)
+        self.planet_speed_slider.create_slider("Speed of Planet: SLIDER_VALUE", pygame.font.SysFont(None, 36), 1, 120, 8)
         self.planet_vx_slider.create_slider("Planet velocity x: SLIDER_VALUE", pygame.font.SysFont(None, 36), -4, 4, 0)
         self.planet_vy_slider.create_slider("Planet velocity y: SLIDER_VALUE", pygame.font.SysFont(None, 36), -4, 4, -2)
         

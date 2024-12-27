@@ -114,7 +114,7 @@ class Lagrange_Points():
         #L4
         rotated_x, rotated_y = l_math.rotate_vector(dx, dy, 120) #L4 is 60 degrees off
         
-        max_length = 1000
+        max_length = 10000
         max_point = (
             star_loc[0] - rotated_x * max_length,
             star_loc[1] - rotated_y * max_length,
@@ -133,7 +133,6 @@ class Lagrange_Points():
         #L5
         rotated_x, rotated_y = l_math.rotate_vector(dx, dy, -120) #L5 is 60 degrees off into the other direction
         
-        max_length = 1000
         max_point = (
             star_loc[0] - rotated_x * max_length,
             star_loc[1] - rotated_y * max_length,
