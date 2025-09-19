@@ -4,8 +4,10 @@ from ui.sliders.slider import Slider
 
 class Edit_Menu:
     
-    def __init__(self, surface):
+    def __init__(self, surface, scale, screen_center):
         self.surface = surface
+        self.scale = scale
+        self.screen_center = screen_center
     
     def check_events(self, event):
         if(hasattr(self, 'planet_gc_slider')):
@@ -24,10 +26,12 @@ class Edit_Menu:
             mouse_pos = pygame.mouse.get_pos()
             
             for i, planet in enumerate(orbiting_planets):
-                cx, cy = planet.location
+                cx = int(planet.location[0] / self.scale + self.screen_center[0])
+                cy = int(planet.location[1] / self.scale + self.screen_center[1])
                 
                 radius = planet.radius
-                distance = math.sqrt((mouse_pos[0] * resolution_factor - cx)**2 + (mouse_pos[1] * resolution_factor - cy)**2)
+                distance = math.sqrt((mouse_pos[0] - cx) ** 2 +
+                                 (mouse_pos[1] - cy) ** 2)
                 
                 if distance <= radius:
                     return planet
@@ -95,10 +99,10 @@ class Edit_Menu:
             dot_color=(255, 0, 0)
         )
         
-        self.planet_gc_slider.create_slider("Mass of Planet: SLIDER_VALUE", pygame.font.SysFont(None, 36), 1, 100000, 1)
-        self.planet_speed_slider.create_slider("Speed of Planet: SLIDER_VALUE", pygame.font.SysFont(None, 36), 1, 120, 8)
-        self.planet_vx_slider.create_slider("Planet velocity x: SLIDER_VALUE", pygame.font.SysFont(None, 36), -4, 4, 0)
-        self.planet_vy_slider.create_slider("Planet velocity y: SLIDER_VALUE", pygame.font.SysFont(None, 36), -4, 4, -2)
+        self.planet_gc_slider.create_slider("Mass of Planet: SLIDER_VALUE", pygame.font.SysFont(None, 24), 5.972e1, 1.0e25, 5.972e24)
+        self.planet_speed_slider.create_slider("Speed of Planet: SLIDER_VALUE", pygame.font.SysFont(None, 24), 60*60, 60*60*120, 60*60*24)
+        self.planet_vx_slider.create_slider("Planet velocity x: SLIDER_VALUE", pygame.font.SysFont(None, 24), -4, 4, 0)
+        self.planet_vy_slider.create_slider("Planet velocity y: SLIDER_VALUE", pygame.font.SysFont(None, 24), -4, 4, -2)
         
     def create_sliders_star(self, star, window_size, resolution_factor):
         self.mass_star_slider = Slider(
@@ -116,7 +120,7 @@ class Edit_Menu:
             dot_color=(255, 0, 0)
         )
         
-        self.mass_star_slider.create_slider("Mass of Star: SLIDER_VALUE", pygame.font.SysFont(None, 36), 1, 10000, 1000)
+        self.mass_star_slider.create_slider("Mass of Star: SLIDER_VALUE", pygame.font.SysFont(None, 24), 1.989e10, 1.000e31, 1.989e30)
 
     def open_planet_menu(self):
         self.planet_gc_slider.draw(self.surface)

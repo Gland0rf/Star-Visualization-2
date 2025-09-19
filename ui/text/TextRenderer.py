@@ -10,7 +10,7 @@ class TextRenderer:
 
         # Font setup
         font_size = int(base_font_size * resolution_factor)
-        self.font = pygame.font.Font(font_name, font_size)
+        self.font = pygame.font.SysFont(font_name, font_size)
         self.color = color
         
         position = [x * resolution_factor for x in position]

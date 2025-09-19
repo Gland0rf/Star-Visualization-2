@@ -46,7 +46,9 @@ class Slider:
             label = label.replace("SLIDER_VALUE", f"{self.slider_value}")
         
         value_text = self.font.render(label, True, self.slider_color)
-        surface.blit(value_text, (self.line_start[0], self.line_start[1] - 40))
+        text_rect = value_text.get_rect()
+        text_rect.bottomleft = (self.line_start[0], self.line_start[1] - 5)
+        surface.blit(value_text, text_rect)
         
     def slider_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:

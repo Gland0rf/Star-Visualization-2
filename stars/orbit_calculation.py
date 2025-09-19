@@ -49,6 +49,7 @@ class Orbit_Calc:
         # Update velocity (half step)
         """Leapfrog integration step for position and velocity update."""
 
+        #print("pos start ", planet_pos)
         # Calculate acceleration due to gravity at the current position
         force = self.calculate_gravitational_force(star_pos, star_mass, planet_pos, planet_mass)
         acceleration = [force[0] / planet_mass, force[1] / planet_mass]
@@ -69,25 +70,18 @@ class Orbit_Calc:
         planet_vel[0] += 0.5 * acceleration[0] * time_step
         planet_vel[1] += 0.5 * acceleration[1] * time_step
         
+        #print("pos end ", planet_pos)
         return planet_pos, planet_vel
     
-    def simulate_orbit(self, planet_pos, planet_vel, planet_mass, star_pos, star_mass, speed_factor, tolerance=5, max_steps=1000):
+    def simulate_orbit(self, planet_pos, planet_vel, planet_mass, star_pos, star_mass, dt, total_time):
         orbit_path = []
-        initial_pos = planet_pos.copy()
-        close_to_start = False
+        steps = int(total_time / dt * 4)
 
-        steps = 0
-        while not close_to_start and steps < max_steps:
-            # Update planet position and velocity
-            planet_pos, planet_vel = self.update_planet_position(planet_pos, planet_vel, planet_mass, star_pos, star_mass, speed_factor)
+        for _ in range(steps):
+            planet_pos, planet_vel = self.update_planet_position(
+                planet_pos, planet_vel, planet_mass, star_pos, star_mass, dt
+            )
             orbit_path.append((planet_pos[0], planet_pos[1]))
-
-            # Check if the planet has returned to a position close to the starting point
-            distance_to_start = math.sqrt((planet_pos[0] - initial_pos[0])**2 + (planet_pos[1] - initial_pos[1])**2)
-            if distance_to_start < tolerance and steps > 100:
-                close_to_start = True
-                
-            steps += 1
 
         return orbit_path
     

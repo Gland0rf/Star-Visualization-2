@@ -31,8 +31,8 @@ class PulsatingStar:
                 
             pygame.draw.circle(surface, color, location, r)
     
-    def __init__(self, location, mass, resolution_factor, min_radius, max_radius, pulse_speed, color_inner, color_outer, gradient_factor, gradient_stretch):
-        self.location = [c * resolution_factor for c in location]
+    def __init__(self, location, mass, min_radius, max_radius, pulse_speed, color_inner, color_outer, gradient_factor, gradient_stretch, screen_center, scale):
+        self.location = location
         self.mass = mass
         self.min_radius = min_radius
         self.max_radius = max_radius
@@ -41,6 +41,8 @@ class PulsatingStar:
         self.color_outer = color_outer
         self.gradient_factor = gradient_factor
         self.gradient_stretch = gradient_stretch
+        self.screen_center = screen_center
+        self.scale = scale
 
         self.radius = min_radius
         self.grow = True
@@ -75,10 +77,14 @@ class PulsatingStar:
             else:
                 self.current_brightness = self.target_brightness - (self.target_brightness - self.initial_brightness) * (self.max_radius - self.radius) / (self.max_radius - self.min_radius)
                 
-    def draw(self, surface, resolution_factor):
-        radius_scaled = int(self.radius * resolution_factor)
+    def draw(self, surface):
+        radius_scaled = int(self.radius)
         color_inner = self.adjust_brightness(self.color_inner, self.current_brightness)
         color_outer = self.adjust_brightness(self.color_outer, self.current_brightness)
+
+        x_px = int(self.location[0] / self.scale + self.screen_center[0])
+        y_px = int(self.location[1] / self.scale + self.screen_center[1])
+        location_px = (x_px, y_px)
 
         gradient_start = (1.0 - self.gradient_stretch) * self.gradient_factor
         gradient_end = gradient_start + self.gradient_stretch
@@ -96,4 +102,4 @@ class PulsatingStar:
                 color = color_inner
 
             color = [min(i, 255) for i in color]
-            pygame.draw.circle(surface, color, self.location, r)
+            pygame.draw.circle(surface, color, location_px, r)

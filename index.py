@@ -4,7 +4,7 @@ import pygame
 info = pygame.display.Info()
 
 #Resolution
-resolution_factor = 2
+resolution_factor = 1
 
 #Screen Dimensions
 width, height = info.current_w, info.current_h
@@ -25,8 +25,12 @@ pulse_speed = 0.008
 gradient_factor = 0.93
 gradient_stretch = 0.5
 
-GRAVITATIONAL_CONSTANT = 1
+# Scale
+AU = 1.496e11
+scale = AU / 300
 
-game = Game(width, height, center_pos, resolution_factor, GRAVITATIONAL_CONSTANT)
+GRAVITATIONAL_CONSTANT = 6.674 * (10 ** -11)
+
+game = Game(width, height, center_pos, resolution_factor, GRAVITATIONAL_CONSTANT, scale)
 game.load_star(min_radius, max_radius, pulse_speed, gradient_factor, gradient_stretch)
 game.main()

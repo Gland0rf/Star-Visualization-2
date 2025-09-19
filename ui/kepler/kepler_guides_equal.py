@@ -35,7 +35,8 @@ class Kepler_Guide_Equal():
             "... MOVE_PLANET",
             "We can connect them again. CONNECT FILL_AREA_WITH_COLOR",
             "CALC_AREA Here, the area would be ~REPLACE_WITH_AREA units. The green area was REPLACE_WITH_OLD_AREA units, which is (almost) the same.",
-            "Note that the planet has to be in an stable orbit for this to work. If the area isn't equal, then the planet might not be in a stable orbit."
+            "Note that the planet has to be in an stable orbit for this to work. If the area isn't equal, then the planet might not be in a stable orbit.",
+            "Slight inaccuracies can occur in this simulation since it's calculated by pixels."
         ]
         
         self.text_renderer = TextRenderer(font_name, base_font_size * resolution_factor, resolution_factor, color, position, char_delay=0.001)

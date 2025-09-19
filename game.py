@@ -10,13 +10,14 @@ from stars.orbit_calculation import Orbit_Calc
 from ui.kepler.menu import MenuButton, Menu
 from ui.kepler.kepler_guides_sun_focus import Kepler_Guide_Sun_Focus
 from ui.kepler.kepler_guides_equal import Kepler_Guide_Equal
+from ui.kepler.kepler_guides_three import Kepler_Guide_Three
 
 from ui.lagrange.draw import Lagrange_Points
 
 class Game:
     pygame.init()
     
-    def __init__(self, width, height, center_pos, resolution_factor, gravitational_constant):
+    def __init__(self, width, height, center_pos, resolution_factor, gravitational_constant, scale):
         #Screen dim
         self.width = width
         self.height = height
@@ -34,6 +35,7 @@ class Game:
         
         #Constant
         self.gravitational_constant = gravitational_constant
+        self.scale = scale
         
         #States
         self.current_state = 1
@@ -55,6 +57,11 @@ class Game:
     
     def change_state(self, state):
         self.current_state = state
+    
+    def to_pixels(self, real_pos, scale, screen_center):
+        x_px = int(real_pos[0] / scale + screen_center[0])
+        y_px = int(real_pos[1] / scale + screen_center[1])
+        return [x_px, y_px]
             
     def main(self):
         #Colors
@@ -73,6 +80,7 @@ class Game:
         pulse_speed = self.pulse_speed
         gradient_factor = self.gradient_factor
         gradient_stretch = self.gradient_stretch
+        screen_center = (width // 2, height // 2)
         
         CURRENT_EDIT_MENU = None
         
@@ -84,46 +92,49 @@ class Game:
         orbit_calculation = Orbit_Calc(G=GRAVITATIONAL_CONSTANT)
         
         pulsating_star = PulsatingStar(
-            location=center_pos,
-            mass=1000,
-            resolution_factor=resolution_factor,
+            location=[0.0, 0.0],
+            mass=1.989e30,
             min_radius=min_radius,
             max_radius = max_radius,
             pulse_speed=pulse_speed,
             color_inner=RED,
             color_outer=YELLOW,
             gradient_factor=gradient_factor,
-            gradient_stretch=gradient_stretch
+            gradient_stretch=gradient_stretch,
+            screen_center=screen_center,
+            scale=self.scale
         )
         
         orbiting_planet = OrbitingStar(
-            location=[width // 2 + 300, height // 2 + 100],
-            velocity=[0, -2 / resolution_factor],
-            mass=1,
-            speed_factor=8.0,
-            resolution_factor=resolution_factor,
+            location=[1.996e11, 0.0],
+            velocity=[0.0, 21_000.0],
+            mass=5.972e24,
+            speed_factor=60*60*24,
             min_radius=min_radius,
             max_radius = max_radius,
             pulse_speed=pulse_speed,
             color_inner=RED,
             color_outer=YELLOW,
             gradient_factor=gradient_factor,
-            gradient_stretch=gradient_stretch
+            gradient_stretch=gradient_stretch,
+            screen_center=screen_center,
+            scale=self.scale
         )
         
         orbiting_planet_2 = OrbitingStar(
-            location=[width // 2 - 300, height // 2 - 100],
-            velocity=[0, -2 / resolution_factor],
-            mass=1,
-            speed_factor=8.0,
-            resolution_factor=resolution_factor,
+            location=[-1.496e11, 0.0],
+            velocity=[0.0, -29_800.0],
+            mass=5.972e24,
+            speed_factor=60*60*24,
             min_radius=min_radius,
             max_radius = max_radius,
             pulse_speed=pulse_speed,
             color_inner=RED,
             color_outer=YELLOW,
             gradient_factor=gradient_factor,
-            gradient_stretch=gradient_stretch
+            gradient_stretch=gradient_stretch,
+            screen_center=screen_center,
+            scale=self.scale
         )
         
         self.orbiting_planets.append(orbiting_planet)
@@ -131,18 +142,21 @@ class Game:
         
         self.stars.append(pulsating_star)
         
-        edit_menu = Edit_Menu(surface=self.high_res_surface)
+        edit_menu = Edit_Menu(surface=self.high_res_surface, scale=self.scale, screen_center=screen_center)
         
         kepler_menu = Menu(resolution_factor, 0, 0, 300, 300, self)
         kepler_menu.add_button('Sun Focus', 50, 50, 200, 50, action=lambda: kepler_menu.button_action('Sun Focus'))
         kepler_menu.add_button('Equal areas in equal times', 50, 120, 200, 50, action=lambda: kepler_menu.button_action('Equal areas in equal times'))
-        kepler_menu.add_button('T sqared perp a cubed', 50, 190, 200, 50, action=lambda: kepler_menu.button_action('T sqared perp a cubed'))
+        kepler_menu.add_button('Third Law', 50, 190, 200, 50, action=lambda: kepler_menu.button_action('Third Law'))
         
         kepler_menu_button = MenuButton(resolution_factor, 100, 100, 200, 50, 'Open Menu', kepler_menu)
 
         kepler_sun_focus_guide = Kepler_Guide_Sun_Focus(self.high_res_surface, self.orbiting_planets[0], self.stars[0], 13, (255, 255, 255), (self.width / 2, 100), GRAVITATIONAL_CONSTANT, resolution_factor)
         kepler_equal_guide = Kepler_Guide_Equal(self, self.high_res_surface, self.orbiting_planets[0], self.stars[0], 13, (255, 255, 255), (self.width / 2, 100), GRAVITATIONAL_CONSTANT, resolution_factor)
+        kepler_guide_three = Kepler_Guide_Three(self, self.high_res_surface, self.orbiting_planets[0], self.stars[0], 13, (255, 255, 255), (self.width / 2, 100), GRAVITATIONAL_CONSTANT, resolution_factor)
         
+        lagrange = Lagrange_Points(pulsating_star, resolution_factor, self.scale, screen_center)
+
         while running:
             self.high_res_surface.fill(BLACK)
             
@@ -164,6 +178,13 @@ class Game:
                                 self.guide_iteration = -1
                                 kepler_equal_guide.reset_values()
                             kepler_equal_guide.clear_text()
+                            self.guide_iteration += 1
+                        elif self.current_guide_active == 3:
+                            if self.guide_iteration == kepler_guide_three.get_iteration_count() - 1:
+                                self.current_state = self.ACTIVE_STATE
+                                self.guide_iteration = -1
+                                kepler_guide_three.reset_values()
+                            kepler_guide_three.clear_text()
                             self.guide_iteration += 1
                 elif self.current_state != self.MOVE_ONLY_STATE:
                     edit_menu.check_events(event)
@@ -199,11 +220,16 @@ class Game:
                         kepler_menu.handle_event(event)
                     elif(self.current_state != self.GUIDE_STATE):
                         kepler_menu_button.handle_event(event)
+
+                if event.type == pygame.MOUSEWHEEL:
+                    if event.y > 0:
+                        self.scale *= 0.9
+                    elif event.y < 0:
+                        self.scale *= 1.1
                 
             if(CURRENT_EDIT_MENU in self.orbiting_planets):
                 edit_menu.open_planet_menu()
-                lagrange = Lagrange_Points(CURRENT_EDIT_MENU, pulsating_star, resolution_factor)
-                lagrange.draw_lagrange_points(self.high_res_surface, GRAVITATIONAL_CONSTANT)
+                lagrange.draw_lagrange_points(CURRENT_EDIT_MENU, self.high_res_surface, GRAVITATIONAL_CONSTANT)
             elif(CURRENT_EDIT_MENU in self.stars):
                 edit_menu.open_star_menu()
                 
@@ -215,6 +241,9 @@ class Game:
                 elif self.current_guide_active == 2:
                     #Kepler law 2
                     kepler_equal_guide.call_state(self.guide_iteration)
+                elif self.current_guide_active == 3:
+                    #Kepler law 3
+                    kepler_guide_three.call_state(self.guide_iteration)
             
             #Twinkling
             if(self.current_state == self.ACTIVE_STATE or self.current_state == self.MOVE_ONLY_STATE):
@@ -229,13 +258,13 @@ class Game:
                 )
             
             pulsating_star.update()
-            pulsating_star.draw(surface=self.high_res_surface, resolution_factor=resolution_factor)
+            pulsating_star.draw(surface=self.high_res_surface)
             
             orbiting_planet.update()
-            orbiting_planet.draw(surface=self.high_res_surface, resolution_factor=resolution_factor)
+            orbiting_planet.draw(surface=self.high_res_surface)
             
             orbiting_planet_2.update()
-            orbiting_planet_2.draw(surface=self.high_res_surface, resolution_factor=resolution_factor)
+            orbiting_planet_2.draw(surface=self.high_res_surface)
             
             #Kepler Menu
             if self.current_state != self.GUIDE_STATE and self.current_state != self.MOVE_ONLY_STATE:

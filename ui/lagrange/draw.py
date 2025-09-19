@@ -1,149 +1,118 @@
 import pygame
 import math
+import copy
 import ui.lagrange.math as l_math
-
 from stars.orbit_calculation import Orbit_Calc
 
-class Lagrange_Points():
-    def __init__(self, planet, star, resolution_factor):
-        self.planet = planet
+
+class Lagrange_Points:
+    def __init__(self, star, resolution_factor, scale, screen_center):
         self.star = star
         self.resolution_factor = resolution_factor
-        
-    def draw_dotted_line(self, surface, color, start_pos, end_pos, width=1, segment_length=10, gap_length=5):
-        #Total length of line
+        self.scale = scale
+        self.screen_center = screen_center
+
+        # Cache orbit once (physics + pixels)
+        self.cached_orbit_real = None
+        self.cached_orbit_px = None
+        self.current_planet = None
+
+        self.iteration = 0
+
+    def to_px(self, pos):
+        """Convert physics coordinates (meters) to screen pixels."""
+        return (
+            pos[0] / self.scale + self.screen_center[0],
+            pos[1] / self.scale + self.screen_center[1]
+        )
+
+    def compute_orbit(self, G, max_steps=1000):
+        """Simulate orbit in physics space and cache both real + pixel paths."""
+        orbit_calculation = Orbit_Calc(G)
+        r = math.dist(self.current_planet.location, self.star.location)
+        period = 2 * math.pi * math.sqrt(r**3 / (G * self.star.mass))
+        dt = period / 1000 # 2000 steps per orbit
+        total_time = period
+        orbit_path = orbit_calculation.simulate_orbit(
+            copy.deepcopy(self.current_planet.location),
+            copy.deepcopy(self.current_planet.velocity),
+            self.current_planet.mass,
+            self.star.location,
+            self.star.mass,
+            dt, total_time=total_time
+        )
+        self.cached_orbit_real = orbit_path
+        self.cached_orbit_px = [self.to_px(p) for p in orbit_path]
+
+    def draw_dotted_line(self, surface, color, start_pos, end_pos,
+                         width=1, segment_length=10, gap_length=5):
         total_length = math.dist(start_pos, end_pos)
-        
-        #Direction vector
         direction_vector = (
             (end_pos[0] - start_pos[0]) / total_length,
             (end_pos[1] - start_pos[1]) / total_length,
         )
-        
-        #Variables
         current_pos = start_pos
         drawing = True
-        
         while total_length > 0:
             if drawing:
-                #Calculate segment pos
                 segment_end_pos = (
                     current_pos[0] + direction_vector[0] * min(segment_length, total_length),
                     current_pos[1] + direction_vector[1] * min(segment_length, total_length),
                 )
-                
-                #Draw segment
                 pygame.draw.line(surface, color, current_pos, segment_end_pos, width)
-                
-                #Update pos
                 current_pos = segment_end_pos
                 total_length -= segment_length
             else:
-                #Move current pos by gap
                 current_pos = (
                     current_pos[0] + direction_vector[0] * min(gap_length, total_length),
                     current_pos[1] + direction_vector[1] * min(gap_length, total_length),
                 )
                 total_length -= gap_length
-            
-            #Toggle    
             drawing = not drawing
+
+    def draw_lagrange_points(self, planet, surface, G):
+        white, red = (255, 255, 255), (255, 0, 0)
+
+        if (self.current_planet != planet or self.iteration >= 5):
+            self.current_planet_px = None
+            self.cached_orbit_real = None
+            self.cached_orbit_px = None
+            self.iteration = 0
+        self.current_planet = planet
+
+        # --- Orbit preview ---
+        if self.cached_orbit_px is None or self.cached_orbit_real is None:
+            self.compute_orbit(G, max_steps=1000)
+        if len(self.cached_orbit_px) > 1:
+            pts = self.cached_orbit_px[::8]
+            if len(pts) > 1:
+                pygame.draw.aalines(surface, red, False, pts)
+
+        # L points
+        l1, l2, l3, l4, l5 = l_math._compute_lagrange_points_phys(self.star, self.current_planet)
         
-    def draw_lagrange_points(self, surface, G):
-        white = (255, 255, 255)
-        red = (255, 0, 0)
-        planet = self.planet
-        star = self.star
-        planet_loc = planet.location
-        star_loc = star.location
+        # Draw helpers
+        font = pygame.font.SysFont(None, 36)
+        def dot_and_label(p, label):
+            q = self.to_px(p)
+            pygame.draw.circle(surface, white, q, 10)
+            surface.blit(font.render(label, False, white), (q[0] + 12, q[1] - 12))
+            return q
         
-        #Draw orbit
-        orbit_calculation = Orbit_Calc(G)
-        orbit_path = orbit_calculation.simulate_orbit(planet_loc[:], planet.velocity[:], planet.mass, star_loc, star.mass, 8, tolerance=100, max_steps=10000)
-        
-        if len(orbit_path) > 1:
-            pygame.draw.aalines(surface, red, True, orbit_path, blend=3)
-        
-        #L1 and L2 line
-        self.draw_dotted_line(surface, white, planet_loc, star_loc, width=5, segment_length=20, gap_length=10)
-        
-        #L1
-        dL1 = int(math.dist(planet_loc, star_loc) * math.pow(planet.mass / (3 * star.mass), 1/3) * self.resolution_factor)
-        line_point = l_math.find_point_on_line((planet_loc), (star_loc), dL1)
-        pygame.draw.circle(surface, white, line_point, 10)
-        text_surface = pygame.font.SysFont(None, 36).render('L1', False, white)
-        surface.blit(text_surface, (line_point[0] + 20, line_point[1]))
-        
-        #L2
-        dx = star_loc[0] - planet_loc[0]
-        dy = star_loc[1] - planet_loc[1]
-        
-        hidden_loc = (planet_loc[0] + dx, planet_loc[1] + dy)
-        
-        line_point = l_math.find_point_on_line((planet_loc), (hidden_loc), -dL1)
-        pygame.draw.circle(surface, white, line_point, 10)
-        text_surface = pygame.font.SysFont(None, 36).render('L2', False, white)
-        surface.blit(text_surface, (line_point[0] + 20, line_point[1]))
-            
-        #L3
-        dx = planet_loc[0] - star_loc[0]
-        dy = planet_loc[1] - star_loc[1]
-        length = math.sqrt(dx**2 + dy**2)
-        
-        
-        if length != 0:
-            dx /= length
-            dy /= length
-        
-        opposite_length = 1000
-        opposite_point = (
-            star_loc[0] - dx * opposite_length,
-            star_loc[1] - dy * opposite_length,
-        )
-        
-        intersection_point = l_math.find_collision_point(orbit_path, star_loc, opposite_point)
-        if intersection_point is None:
-            intersection_point = opposite_point
-        
-        self.draw_dotted_line(surface, white, star_loc, intersection_point, width=5, segment_length=20, gap_length=10)
-        pygame.draw.circle(surface, white, intersection_point, 10)
-        
-        text_surface = pygame.font.SysFont(None, 36).render('L3', False, white)
-        surface.blit(text_surface, (intersection_point[0] + 20, intersection_point[1]))
-        
-        #L4
-        rotated_x, rotated_y = l_math.rotate_vector(dx, dy, 120) #L4 is 60 degrees off
-        
-        max_length = 10000
-        max_point = (
-            star_loc[0] - rotated_x * max_length,
-            star_loc[1] - rotated_y * max_length,
-        )
-        
-        intersection_point = l_math.find_collision_point(orbit_path, star_loc, max_point)
-        if intersection_point is None:
-            intersection_point = max_point
-            
-        self.draw_dotted_line(surface, white, planet_loc, intersection_point, width=5, segment_length=20, gap_length=10)
-        pygame.draw.circle(surface, white, intersection_point, 10)
-        
-        text_surface = pygame.font.SysFont(None, 36).render('L4', False, white)
-        surface.blit(text_surface, (intersection_point[0] + 20, intersection_point[1]))
-        
-        #L5
-        rotated_x, rotated_y = l_math.rotate_vector(dx, dy, -120) #L5 is 60 degrees off into the other direction
-        
-        max_point = (
-            star_loc[0] - rotated_x * max_length,
-            star_loc[1] - rotated_y * max_length,
-        )
-        
-        intersection_point = l_math.find_collision_point(orbit_path, star_loc, max_point)
-        if intersection_point is None:
-            intersection_point = max_point
-            
-        self.draw_dotted_line(surface, white, planet_loc, intersection_point, width=5, segment_length=20, gap_length=10)
-        pygame.draw.circle(surface, white, intersection_point, 10)
-        
-        text_surface = pygame.font.SysFont(None, 36).render('L5', False, white)
-        surface.blit(text_surface, (intersection_point[0] + 20, intersection_point[1]))
+        p_px  = self.to_px(self.current_planet.location)
+        s_px  = self.to_px(self.star.location)
+        l1_px = dot_and_label(l1, "L1")
+        l2_px = dot_and_label(l2, "L2")
+        l3_px = dot_and_label(l3, "L3")
+        l4_px = dot_and_label(l4, "L4")
+        l5_px = dot_and_label(l5, "L5")
+
+        # ---- Lines (pixel coords) ----
+        self.draw_dotted_line(surface, white, p_px, s_px, width=2)
+        self.draw_dotted_line(surface, white, s_px, l3_px, width=2)
+        self.draw_dotted_line(surface, white, p_px, l4_px, width=2)
+        self.draw_dotted_line(surface, white, p_px, l5_px, width=2)
+
+        self.iteration += 1
+
+    

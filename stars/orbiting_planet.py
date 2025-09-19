@@ -9,8 +9,8 @@ class OrbitingStar:
     def adjust_brightness(self, color, factor):
         return tuple(int(c + (255 - c) * factor) for c in color)
     
-    def __init__(self, location, velocity, mass, resolution_factor, speed_factor, min_radius, max_radius, pulse_speed, color_inner, color_outer, gradient_factor, gradient_stretch):
-        self.location = [c * resolution_factor for c in location]
+    def __init__(self, location, velocity, mass, speed_factor, min_radius, max_radius, pulse_speed, color_inner, color_outer, gradient_factor, gradient_stretch, screen_center, scale):
+        self.location = location
         self.velocity = velocity
         self.mass = mass
         self.speed_factor = speed_factor
@@ -21,14 +21,20 @@ class OrbitingStar:
         self.color_outer = color_outer
         self.gradient_factor = gradient_factor
         self.gradient_stretch = gradient_stretch
+        self.screen_center = screen_center
+        self.scale = scale
 
         self.radius = min_radius
         
     def update(self):
         pass
                 
-    def draw(self, surface, resolution_factor):
-        radius_scaled = int(self.radius)
+    def draw(self, surface):
+        x_px = int(self.location[0] / self.scale + self.screen_center[0])
+        y_px = int(self.location[1] / self.scale + self.screen_center[1])
+        location_px = (x_px, y_px)
+
+        radius_scaled = int(self.radius / 2)
 
         gradient_start = (1.0 - self.gradient_stretch) * self.gradient_factor
         gradient_end = gradient_start + self.gradient_stretch
@@ -45,4 +51,4 @@ class OrbitingStar:
             else:
                 color = self.color_inner
 
-            pygame.draw.circle(surface, color, self.location, r)
+            pygame.draw.circle(surface, color, location_px, r)

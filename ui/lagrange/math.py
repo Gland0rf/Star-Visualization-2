@@ -1,57 +1,70 @@
 import math
 
-def find_collision_point(ellipse_points, inside_point, outside_point):
-    x1, y1 = inside_point
-    x2, y2 = outside_point
-
-    closest_point = None
-    min_distance = float('inf')
-
-    # Direction vector from inside point to outside point
-    dx, dy = x2 - x1, y2 - y1
-    line_length = math.sqrt(dx**2 + dy**2)
-
-    for ex, ey in ellipse_points:
-        # Vector from inside point to ellipse point
-        fx, fy = ex - x1, ey - y1
-        
-        # Project the ellipse point onto the line
-        t = (fx * dx + fy * dy) / (line_length ** 2)
-
-        if 0 <= t <= 1:
-            # Calculate the closest point on the line segment
-            closest_x = x1 + t * dx
-            closest_y = y1 + t * dy
-
-            # Distance from ellipse point to the closest point on the line
-            distance = math.sqrt((ex - closest_x) ** 2 + (ey - closest_y) ** 2)
-
-            if distance < min_distance:
-                min_distance = distance
-                closest_point = (ex, ey)
-
-    return closest_point
-
-def rotate_vector(dx, dy, angle_degrees):
-    # Convert the angle to radians
-    angle_radians = math.radians(angle_degrees)
+def _unit(v):
+        L = math.hypot(v[0], v[1])
+        return (v[0]/L, v[1]/L)
     
-    # Calculate the new vector components after rotation
-    new_dx = dx * math.cos(angle_radians) - dy * math.sin(angle_radians)
-    new_dy = dx * math.sin(angle_radians) + dy * math.cos(angle_radians)
-    
-    return new_dx, new_dy
+def _perp(u):
+    return (-u[1], u[0])
 
-def find_point_on_line(point1, point2, distance):
-    x1, y1 = point1
-    x2, y2 = point2
+def _colinear_root(mu, a, b, iters=100, tol=1e-12):
+    def f(x):
+        return (x
+                - (1.0 - mu)*(x + mu)/abs(x + mu)**3
+                - mu*(x - 1.0 + mu)/abs(x - 1.0 + mu)**3)
+    fa, fb = f(a), f(b)
+    if fa*fb > 0:
+        for k in range(1, 6):
+            aa, bb = a - k, b + k
+            fa, fb = f(aa), f(bb)
+            if fa*fb <= 0:
+                a, b = aa, bb
+                break
+        else:
+            return (a+b)/2
+    for _ in range(iters):
+        m = 0.5*(a+b)
+        fm = f(m)
+        if fa*fm <= 0:
+            b, fb = m, fm
+        else:
+            a, fa = m, fm
+        if abs(b - a) < tol:
+            break
+    return 0.5*(a+b)
+
+def _compute_lagrange_points_phys(star, current_planet):
+    planet_pos = current_planet.location
+    star_pos = star.location
+    m_planet = current_planet.mass
+    m_star = star.mass
+
+    r_vec = (planet_pos[0] - star_pos[0], planet_pos[1] - star_pos[1])
+    r = math.hypot(r_vec[0], r_vec[1])
+    r_hat = _unit(r_vec)
+    p_hat = _perp(r_hat)
+
+    mtot = m_star + m_planet
+    bary = ((m_star*star_pos[0] + m_planet*planet_pos[0]) / mtot,
+            (m_star*star_pos[1] + m_planet*planet_pos[1]) / mtot)
     
-    d_AB = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    mu = m_planet / mtot
+
+    eps = 1e-6
+    x1 = _colinear_root(mu, -mu + eps, 1.0 - mu - eps)
+    x2 = _colinear_root(mu, 1.0 - mu + eps, 5.0)
+    x3 = _colinear_root(mu, -5.0, -mu - eps)
+
+    def to_phys(x, y=0.0):
+        return (star_pos[0] + r*((x + mu)*r_hat[0] + y*p_hat[0]),
+                star_pos[1] + r*((x + mu)*r_hat[1] + y*p_hat[1]))
     
-    unit_vector_x = (x2 - x1) / d_AB
-    unit_vector_y = (y2 - y1) / d_AB
-    
-    x = x1 + distance * unit_vector_x
-    y = y1 + distance * unit_vector_y
-    
-    return (x, y)
+    l1 = to_phys(x1, 0.0)
+    l2 = to_phys(x2, 0.0)
+    l3 = to_phys(x3, 0.0)
+
+    s3o2 = math.sqrt(3.0)/2.0
+    l4 = to_phys(0.5 - mu, s3o2)
+    l5 = to_phys(0.5 - mu, -s3o2)
+
+    return l1, l2, l3, l4, l5

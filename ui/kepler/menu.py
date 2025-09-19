@@ -94,3 +94,5 @@ class Menu:
             self.main_instance.current_guide_active = 1
         elif id == 'Equal areas in equal times':
             self.main_instance.current_guide_active = 2
+        elif id == 'Third Law':
+            self.main_instance.current_guide_active = 3
