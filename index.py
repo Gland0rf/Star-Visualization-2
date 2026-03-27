@@ -8,6 +8,7 @@ resolution_factor = 1
 
 #Screen Dimensions
 width, height = info.current_w, info.current_h
+print(width, height)
 center_pos = [width // 2, height // 2]
 
 #Colors
@@ -27,10 +28,11 @@ gradient_stretch = 0.5
 
 # Scale
 AU = 1.496e11
-scale = AU / 300
+scale = AU / 1000
 
 GRAVITATIONAL_CONSTANT = 6.674 * (10 ** -11)
+SPEED_OF_LIGHT = 299_792_458.0
 
-game = Game(width, height, center_pos, resolution_factor, GRAVITATIONAL_CONSTANT, scale)
+game = Game(width, height, center_pos, resolution_factor, GRAVITATIONAL_CONSTANT, SPEED_OF_LIGHT, scale)
 game.load_star(min_radius, max_radius, pulse_speed, gradient_factor, gradient_stretch)
 game.main()

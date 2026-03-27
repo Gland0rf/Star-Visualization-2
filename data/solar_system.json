@@ -1,0 +1,95 @@
+{
+  "stars": [
+    {
+      "name": "Sol",
+      "mass": 1.989e30,
+      "location": [0.0, 0.0],
+      "velocity": [0.0, 0.0],
+      "color_inner": [255, 235, 180],
+      "color_outer": [255, 200, 90]
+    }
+  ],
+  "planets": [
+    {
+      "name": "Mercury",
+      "mass": 3.285e23,
+      "location": [5.8e10, 0.0],
+      "velocity": [0.0, 47870.0],
+      "parent": "Sol",
+      "color_inner": [170, 150, 120],
+      "color_outer": [140, 110, 90]
+    },
+    {
+      "name": "Venus",
+      "mass": 4.867e24,
+      "location": [1.082e11, 0.0],
+      "velocity": [0.0, 35020.0],
+      "parent": "Sol",
+      "color_inner": [255, 230, 180],
+      "color_outer": [220, 180, 130]
+    },
+    {
+      "name": "Earth",
+      "mass": 5.972e24,
+      "location": [1.496e11, 0.0],
+      "velocity": [0.0, 29783.0],
+      "parent": "Sol",
+      "color_inner": [80, 150, 255],
+      "color_outer": [60, 100, 255]
+    },
+    {
+      "name": "Mars",
+      "mass": 6.417e23,
+      "location": [2.279e11, 0.0],
+      "velocity": [0.0, 24100.0],
+      "parent": "Sol",
+      "color_inner": [255, 100, 60],
+      "color_outer": [200, 60, 40]
+    },
+    {
+      "name": "Jupiter",
+      "mass": 1.898e27,
+      "location": [7.785e11, 0.0],
+      "velocity": [0.0, 13070.0],
+      "parent": "Sol",
+      "color_inner": [255, 210, 160],
+      "color_outer": [200, 160, 120]
+    },
+    {
+      "name": "Saturn",
+      "mass": 5.683e26,
+      "location": [1.433e12, 0.0],
+      "velocity": [0.0, 9680.0],
+      "parent": "Sol",
+      "color_inner": [255, 240, 200],
+      "color_outer": [220, 200, 160]
+    },
+    {
+      "name": "Uranus",
+      "mass": 8.681e25,
+      "location": [2.872e12, 0.0],
+      "velocity": [0.0, 6810.0],
+      "parent": "Sol",
+      "color_inner": [170, 230, 255],
+      "color_outer": [120, 200, 255]
+    },
+    {
+      "name": "Neptune",
+      "mass": 1.024e26,
+      "location": [4.495e12, 0.0],
+      "velocity": [0.0, 5430.0],
+      "parent": "Sol",
+      "color_inner": [100, 150, 255],
+      "color_outer": [60, 100, 200]
+    },
+    {
+      "name": "Pluto",
+      "mass": 1.309e22,
+      "location": [5.906e12, 0.0],
+      "velocity": [0.0, 4748.0],
+      "parent": "Sol",
+      "color_inner": [210, 180, 160],
+      "color_outer": [180, 150, 130]
+    }
+  ]
+}

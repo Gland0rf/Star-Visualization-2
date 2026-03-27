@@ -30,16 +30,15 @@ class Kepler_Guide_Equal():
             "... MOVE_PLANET",
             "Let's connect the lines to make a triangle. CONNECT",
             "Now we can calculate the area of the orbit. FILL_AREA_WITH_COLOR",
-            "CALC_AREA Here, the area would be ~REPLACE_WITH_AREA units.",
+            "CALC_AREA Here, the area would be ~REPLACE_WITH_AREA km2.",
             "Now, let's do the same thing again. CHANGE_ITERATION",
             "... MOVE_PLANET",
             "We can connect them again. CONNECT FILL_AREA_WITH_COLOR",
-            "CALC_AREA Here, the area would be ~REPLACE_WITH_AREA units. The green area was REPLACE_WITH_OLD_AREA units, which is (almost) the same.",
-            "Note that the planet has to be in an stable orbit for this to work. If the area isn't equal, then the planet might not be in a stable orbit.",
-            "Slight inaccuracies can occur in this simulation since it's calculated by pixels."
+            "CALC_AREA Here, the area would be ~REPLACE_WITH_AREA km2. The green area was REPLACE_WITH_OLD_AREA km2, which is similar.",
+            "Note that the planet has to be in an stable orbit for this to work. If the area isn't equal, then the planet might not be in a stable orbit."
         ]
         
-        self.text_renderer = TextRenderer(font_name, base_font_size * resolution_factor, resolution_factor, color, position, char_delay=0.001)
+        self.text_renderer = TextRenderer(font_name, base_font_size * resolution_factor * 1.8, resolution_factor, color, position, char_delay=0.001)
     
     def call_state(self, state):
         #Display text
@@ -83,13 +82,13 @@ class Kepler_Guide_Equal():
 
         if "CALC_AREA" in text:
             text = text.replace("CALC_AREA ", "")
-            area = self.calc_area(self.hit_points1)
+            area = self.calc_area(self.hit_points1, True) / 1e6
             self.old_area = int(area)
             if self.current_planet_iteration == 1:
-                area = self.calc_area(self.hit_points2)
-            text = text.replace("REPLACE_WITH_AREA", str(int(area)))
+                area = self.calc_area(self.hit_points2, True)
+            text = text.replace("REPLACE_WITH_AREA", self.format_area_scientific(area))
             if "REPLACE_WITH_OLD_AREA" in text:
-                text = text.replace("REPLACE_WITH_OLD_AREA", str(int(self.old_area)))
+                text = text.replace("REPLACE_WITH_OLD_AREA", self.format_area_scientific(self.old_area))
 
         if "CHANGE_ITERATION" in text:
             text = text.replace(" CHANGE_ITERATION", "")
@@ -126,9 +125,9 @@ class Kepler_Guide_Equal():
                 
 
     def draw_triangle(self, hit_points, color=(255, 0, 0)):
-        star_loc = self.main_instance.stars[0].location
-        pygame.draw.line(self.screen, color, hit_points[0], star_loc, 5)
-        pygame.draw.line(self.screen, color, hit_points[-1], star_loc, 5)
+        star_loc = self.main_instance.to_pixels(self.main_instance.stars[0].location)
+        pygame.draw.line(self.screen, color, self.main_instance.to_pixels(hit_points[0]), star_loc, 5)
+        pygame.draw.line(self.screen, color, self.main_instance.to_pixels(hit_points[-1]), star_loc, 5)
             
     def subdivide_points(self, points, points_between=4):
         new_points = []
@@ -212,38 +211,44 @@ class Kepler_Guide_Equal():
     def get_iteration_count(self):
         return len(self.iterationQueue)
     
-    def draw_hitpoints(self, hit_points, color, dot_radius=5):
-        for point in hit_points:
-            pygame.draw.circle(self.screen, color, point, dot_radius)
+    def draw_hitpoints(self, hit_points, color, dot_radius=2):
+        if not hit_points:
+            return
 
-    def get_polygon_points(self, hit_points):
-        star_loc = self.main_instance.stars[0].location
-        baseline1_start = hit_points[0]
-        baseline1_end = tuple(i for i in star_loc)
-        baseline2_end = baseline1_end
+        # Convert all points to pixels
+        pts_px = [self.main_instance.to_pixels(p) for p in hit_points]
 
-        baseline_x = [baseline1_start[0], baseline1_end[0], baseline2_end[0]]
-        baseline_y = [baseline1_start[1], baseline1_end[1], baseline2_end[1]]
+        # Draw dots
+        for p in pts_px:
+            pygame.draw.circle(self.screen, color, p, dot_radius)
 
-        circle_points = hit_points
-        curve_x, curve_y = zip(*circle_points)
+        # Draw connecting line
+        if len(pts_px) > 1:
+            pygame.draw.aalines(self.screen, color, False, pts_px)
 
-        polygon_x = np.concatenate((baseline_x, curve_x[::-1]))
-        polygon_y = np.concatenate((baseline_y, curve_y[::-1]))
+    def get_polygon_points(self, hit_points, use_world=False):
+        if use_world:
+            star = self.main_instance.stars[0].location
+            curve = hit_points
+        else:
+            star = self.main_instance.to_pixels(self.main_instance.stars[0].location)
+            curve = [self.main_instance.to_pixels(p) for p in hit_points]
 
-        return polygon_x, polygon_y
+        polygon_points = [star] + curve + [star]
+        x, y = zip(*polygon_points)
+        return np.array(x), np.array(y)
 
     def fill_area(self, hit_points, color=(10, 255, 10)):
         polygon_x, polygon_y = self.get_polygon_points(hit_points)
-
         polygon_points = list(zip(polygon_x, polygon_y))
-
         pygame.draw.polygon(self.screen, color, polygon_points)
 
-    def calc_area(self, hit_points):
-        polygon_x, polygon_y = self.get_polygon_points(hit_points)
-
-        area = 0.5 * np.abs(np.dot(polygon_x, np.roll(polygon_y, 1)) - np.dot(polygon_y, np.roll(polygon_x, 1)))
+    def calc_area(self, hit_points, real_world=False):
+        polygon_x, polygon_y = self.get_polygon_points(hit_points, use_world=real_world)
+        area = 0.5 * np.abs(
+            np.dot(polygon_x, np.roll(polygon_y, 1)) -
+            np.dot(polygon_y, np.roll(polygon_x, 1))
+        )
         return area
     
     def reset_values(self):
@@ -256,3 +261,10 @@ class Kepler_Guide_Equal():
 
         self.hit_points1 = []
         self.hit_points2 = []
+
+    def format_area_scientific(self, value):
+        # Format as scientific notation, e.g. 3.21e+15
+        s = f"{value:.2e}"
+        base, exp = s.split("e")
+        exp = int(exp)  # remove leading zeros
+        return f"{base} × 10^{exp}"

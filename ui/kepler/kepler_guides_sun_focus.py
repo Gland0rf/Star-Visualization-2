@@ -1,16 +1,18 @@
 import pygame
 import math
+import copy
 import numpy as np
 from stars.orbit_calculation import Orbit_Calc
 from ui.text.TextRenderer import TextRenderer
 
 class Kepler_Guide_Sun_Focus():
-    def __init__(self, screen, planet, star, base_font_size, color, position, G, resolution_factor=1.0, font_name=None):
+    def __init__(self, screen, planet, star, base_font_size, color, position, G, game, resolution_factor=1.0, font_name=None):
         self.screen = screen
         self.resolution_factor = resolution_factor
         self.G = G
         self.planet = planet
         self.star = star
+        self.game = game
         
         self.iterationQueue = [
             "Keplers first law states that the orbit of every planet is an ellipse, with the sun at one of the two foci.",
@@ -20,7 +22,7 @@ class Kepler_Guide_Sun_Focus():
             "This means, that the sun is always at one of the two foci of the ellipse. DRAW_ALL"
         ]
         
-        self.text_renderer = TextRenderer(font_name, base_font_size * resolution_factor, resolution_factor, color, position, char_delay=0.001)
+        self.text_renderer = TextRenderer(font_name, int(base_font_size * resolution_factor * 1.8), resolution_factor, color, position, char_delay=0.001)
     
     def call_state(self, state):
         #Display text
@@ -45,32 +47,17 @@ class Kepler_Guide_Sun_Focus():
         self.text_renderer.render(self.screen)
         
     def draw_data(self, draw_ellipse, draw_foci, draw_foci_two):
-        orbit_calc = Orbit_Calc(self.G)
-        
-        orbit_path = orbit_calc.simulate_orbit(self.planet.location[:], self.planet.velocity[:],
-                                               self.planet.mass, self.star.location, self.star.mass,
-                                               8, tolerance=100, max_steps=10000)
-        
-        orbit_path = self.subdivide_points(orbit_path, points_between=10)  
-        
-        closest_point = self.find_closest_point(orbit_path, self.star.location)
-        farthest_point = self.find_farthest_point(orbit_path, self.star.location)
-        
-        closestDifX = closest_point[0] - self.star.location[0]
-        closestDifY = closest_point[1] - self.star.location[1]
-        
-        focalPointX = farthest_point[0] + closestDifX
-        focalPointY = farthest_point[1] + closestDifY
-        
+        if not hasattr(self, "cached_orbit_px"):
+            self._precompute_orbit_and_foci()
+
+        if len(self.cached_orbit_px) > 2 and draw_ellipse:
+            pygame.draw.aalines(self.screen, (255, 0, 0), False, self.cached_orbit_px, blend=3)
+
         if draw_foci:
-            pygame.draw.circle(self.screen, (255, 0, 0), (focalPointX, focalPointY), 30)
-        
+            pygame.draw.circle(self.screen, (255, 0, 0), (int(self.f2_px[0]), int(self.f2_px[1])), 30)
+            
         if draw_foci_two:
-            pygame.draw.circle(self.screen, (0, 0, 255), (self.star.location[0], self.star.location[1]), 30)
-                
-        if len(orbit_path) > 1:
-            if draw_ellipse:
-                pygame.draw.aalines(self.screen, (255, 0, 0), True, orbit_path, blend=3)
+            pygame.draw.circle(self.screen, (0, 0, 255), (int(self.star_px[0]), int(self.star_px[1])), 30)
             
     def subdivide_points(self, points, points_between=4):
         new_points = []
@@ -153,3 +140,35 @@ class Kepler_Guide_Sun_Focus():
             
     def get_iteration_count(self):
         return len(self.iterationQueue)
+    
+    def _precompute_orbit_and_foci(self):
+        orbit_calc = Orbit_Calc(self.G)
+        
+        r = math.dist(self.planet.location, self.star.location)
+        period = 2 * math.pi * math.sqrt(r**3 / (self.G * self.star.mass))
+        dt = period / 1000 # 2000 steps per orbit
+        total_time = period
+
+        raw_path_world = orbit_calc.simulate_orbit(
+            copy.deepcopy(self.planet.location),
+            copy.deepcopy(self.planet.velocity),
+            self.planet.mass,
+            self.game.stars,
+            dt,
+            total_time
+        )
+        
+        to_px = self.planet.game.to_pixels
+        step = max(1, len(raw_path_world) // 1200)
+        pixel_path = [to_px(p) for p in raw_path_world[::step]]
+        self.cached_orbit_px = self.subdivide_points(pixel_path, points_between=10)
+    
+        peri = self.find_closest_point(raw_path_world, self.star.location)
+        apo = self.find_farthest_point(raw_path_world, self.star.location)
+        cx, cy = (0.5 * (peri[0] + apo[0]), 0.5 * (peri[1] + apo[1]))
+
+        sx, sy = self.star.location
+        f2_world = (2 * cx - sx, 2 * cy - sy)
+
+        self.star_px = to_px(self.star.location)
+        self.f2_px = to_px(f2_world)
